@@ -1,0 +1,101 @@
+{
+  "name": "Agendamentos - Sistema Automático",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agendar",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-agendar",
+      "name": "Webhook Agendar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "agendar"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados do agendamento\nconst body = $input.first().json.body || $input.first().json;\n\nreturn [{\n  json: {\n    cliente_telefone: body.telefone || body.phone || 'desconhecido',\n    cliente_nome: body.nome || body.name || 'Cliente',\n    data_agendamento: body.data || body.date || new Date().toISOString().split('T')[0],\n    hora_agendamento: body.hora || body.time || '09:00',\n    local: body.local || body.location || 'Rua Rio Grande do Norte, 159',\n    servico: body.servico || body.service || 'Atendimento geral',\n    status: 'agendado',\n    notas: body.notas || body.notes || '',\n    criado_em: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "code-extrair-agendamento",
+      "name": "Extrair Dados Agendamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "agendamentos",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "supabase-insert-agendamento",
+      "name": "Supabase - Inserir Agendamento",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Supabase SecretariaEletronica"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Agendamento criado com sucesso\", \"data\": $json } }}"
+      },
+      "id": "respond-webhook-agendamento",
+      "name": "Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Agendar": {
+      "main": [
+        [
+          {
+            "node": "Extrair Dados Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Dados Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Inserir Agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Inserir Agendamento": {
+      "main": [
+        [
+          {
+            "node": "Responder Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-21T00:00:00.000Z",
+  "versionId": "1"
+}

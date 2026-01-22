@@ -1,0 +1,101 @@
+{
+  "name": "WhatsApp - Receber Mensagens",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-mensagens",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-whatsapp",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "whatsapp-mensagens"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados da mensagem WhatsApp\nconst body = $input.first().json.body || $input.first().json;\n\n// Suporte para diferentes formatos de webhook WhatsApp\nconst entry = body.entry?.[0];\nconst changes = entry?.changes?.[0];\nconst value = changes?.value;\nconst message = value?.messages?.[0];\nconst contact = value?.contacts?.[0];\n\nreturn [{\n  json: {\n    cliente_telefone: message?.from || body.from || body.phone || 'desconhecido',\n    cliente_nome: contact?.profile?.name || body.name || 'Cliente',\n    conteudo: message?.text?.body || message?.caption || body.message || body.text || '',\n    tipo: message?.type || body.type || 'texto',\n    url_midia: message?.image?.url || message?.video?.url || message?.audio?.url || body.media_url || null,\n    direcao: 'entrada',\n    status: 'recebida',\n    criado_em: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "code-extrair-whatsapp",
+      "name": "Extrair Dados WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "mensagens_whatsapp",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "supabase-insert-whatsapp",
+      "name": "Supabase - Inserir Mensagem",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Supabase SecretariaEletronica"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Mensagem registrada\" } }}"
+      },
+      "id": "respond-webhook-whatsapp",
+      "name": "Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Extrair Dados WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Dados WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Inserir Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Inserir Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Responder Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-21T00:00:00.000Z",
+  "versionId": "1"
+}

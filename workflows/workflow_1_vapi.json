@@ -1,0 +1,101 @@
+{
+  "name": "Vapi.ai - Registrar Chamadas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi-chamadas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-vapi",
+      "name": "Webhook Vapi",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "vapi-chamadas"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrair dados da chamada Vapi.ai\nconst body = $input.first().json.body || $input.first().json;\n\nreturn [{\n  json: {\n    cliente_telefone: body.customer?.number || body.phoneNumber || 'desconhecido',\n    data_hora: new Date().toISOString(),\n    duracao_segundos: body.duration || body.call?.duration || 0,\n    transcricao: body.transcript || body.messages?.map(m => m.content).join('\\n') || '',\n    resumo: body.summary || body.analysis?.summary || 'Chamada registrada',\n    status: body.status || 'completed'\n  }\n}];"
+      },
+      "id": "code-extrair",
+      "name": "Extrair Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "chamadas",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "supabase-insert",
+      "name": "Supabase - Inserir Chamada",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "CREDENTIAL_ID",
+          "name": "Supabase SecretariaEletronica"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Chamada registrada com sucesso\" } }}"
+      },
+      "id": "respond-webhook",
+      "name": "Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Vapi": {
+      "main": [
+        [
+          {
+            "node": "Extrair Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Dados": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Inserir Chamada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Inserir Chamada": {
+      "main": [
+        [
+          {
+            "node": "Responder Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-01-21T00:00:00.000Z",
+  "versionId": "1"
+}
