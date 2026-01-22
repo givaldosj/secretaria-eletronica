@@ -1,0 +1,41 @@
+# Credenciais e chaves sensíveis
+supabase_credentials.json
+.env
+.env.local
+.env.*.local
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+*.log
+
+# Node modules
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Arquivos temporários
+tmp/
+temp/
+*.tmp
+
+# Arquivos de configuração local
+local_config.json
+secrets.json
